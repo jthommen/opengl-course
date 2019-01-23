@@ -47,29 +47,12 @@ float minSize = 0.1f;
 // model: Where the 3D model is
 // view: Where the camera is
 // projection: How what the camera sees is translated to the screen (with depth)
-static const char* vShader = "								\n"
-"#version 330												\n"
-"layout (location = 0) in vec3 pos;							\n"
-"out vec4 vCol;												\n"
-"uniform mat4 model;										\n"
-"uniform mat4 projection;									\n"
-"void main()												\n"
-"{															\n"
-"	gl_Position = projection * model * vec4(pos, 1.0);		\n"
-"	vCol = vec4(clamp(pos, 0.0f, 1.0f), 1.0f);				\n"
-"}";
+static const char* vShader = "Shaders/shader.vert";
 
 // Fragment Shader
 // Takes the window-space XYZ position of the fragment
 // Computes the output color(s)
-static const char* fShader = "								\n"
-"#version 330												\n"
-"in vec4 vCol;												\n"
-"out vec4 color;											\n"
-"void main()												\n"
-"{															\n"
-"	color = vCol;											\n"
-"}";
+static const char* fShader = "Shaders/shader.frag";
 
 void CreateObjects()
 {
@@ -103,7 +86,7 @@ void CreateObjects()
 void CreateShaders()
 {
 	Shader* shader1 = new Shader();
-	shader1->CreateFromString(vShader, fShader);
+	shader1->CreateFromFiles(vShader, fShader);
 	shaderList.push_back(*shader1);
 }
 
