@@ -163,11 +163,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="GLwindow.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Shader.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="GLwindow.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="OpenGLCourseApp.cpp" />
     <ClCompile Include="pch.cpp">

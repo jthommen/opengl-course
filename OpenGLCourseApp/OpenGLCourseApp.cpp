@@ -16,26 +16,13 @@
 
 #include "Mesh.h"
 #include "Shader.h"
+#include "GLwindow.h"
 
-// Defining window dimensions
-const GLint WIDTH = 800, HEIGHT = 600;
 const float toRadians = 3.14159265f / 180.0f;
 
+GLwindow mainWindow;
 std::vector<Mesh*> meshList;
 std::vector<Shader> shaderList;
-
-// Control triangle movements
-bool direction = true;
-float triOffset = 0.0f;
-float triMaxOffset = 0.7f;
-float triIncrement = 0.008f;
-
-float curAngle = 0.0f;
-
-bool sizeDirection = true;
-float curSize = 0.4f;
-float maxSize = 0.8f;
-float minSize = 0.1f;
 
 // Shaders (normally in external file)
 // Vertex Shader
@@ -92,61 +79,9 @@ void CreateShaders()
 
 int main()
 {
-
-	// Initialize GLFW
-	if (!glfwInit())
-	{
-		std::cout << "Initialization failed.\n";
-		glfwTerminate();
-		return 1; // error
-	}
-
-	// Setup GLFW window properties
-	// OpenGL version
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-
-	// Core profile means no backwards compatibility
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	// Allow forward compatibiliy
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-
-	// Create glfw window
-	// Params: width, heigh, title, multi monitors, shared across systems
-	GLFWwindow* mainWindow = glfwCreateWindow(WIDTH, HEIGHT, "Test Window", NULL, NULL);
-	if (!mainWindow)
-	{
-		std::cout << "GLFW window creation failed.\n";
-		glfwTerminate();
-		return 1;
-	}
-
-	// Set buffer size information
-	// After window creation, need area in the window = buffer
-	// Buffer holds all the openGL data that is being drawn to
-	int bufferWidth, bufferHeight;
-	glfwGetFramebufferSize(mainWindow, &bufferWidth, &bufferHeight);
-
-	// Set context for GLEW to use (could switch between windows)
-	glfwMakeContextCurrent(mainWindow);
-
-	// Allow modern extension features (enable glew experimental)
-	glewExperimental = GL_TRUE;
-
-	// Initialize glew
-	if (glewInit() != GLEW_OK)
-	{
-		std::cout << "GLEW initialization failed.\n";
-		glfwDestroyWindow(mainWindow);
-		glfwTerminate();
-		return 1;
-	}
-
-	// Enable depth buffer
-	glEnable(GL_DEPTH_TEST);
-
-	// Vertex positions are transformed into window coordinates
-	glViewport(0, 0, bufferWidth, bufferHeight);
+	// Create Window
+	mainWindow = GLwindow(800, 600);
+	mainWindow.Initialize();
 
 	// Call functions to draw the triangle
 	CreateObjects();
@@ -155,45 +90,13 @@ int main()
 	GLuint uniformProjection = 0, uniformModel = 0;
 
 	// Creating camera projection (adding depth)
-	glm::mat4 projection = glm::perspective(45.0f, (GLfloat)bufferWidth / (GLfloat)bufferHeight, 0.1f, 100.0f);
+	glm::mat4 projection = glm::perspective(45.0f, (GLfloat)mainWindow.getBufferWidth() / (GLfloat)mainWindow.getBufferHeight(), 0.1f, 100.0f);
 
 	// Loop until window closed
-	while (!glfwWindowShouldClose(mainWindow))
+	while (!mainWindow.getShouldClose())
 	{
 		// Get & handle user input events
 		glfwPollEvents();
-
-		// while loop is running, check direction of triangle
-		// steer accordingly
-		if(direction)
-		{
-			triOffset += triIncrement;
-		}
-		else {
-			triOffset -= triIncrement;
-		}
-
-		// If we reach max end points, change direction
-		if (std::abs(triOffset) >= triMaxOffset)
-		{
-			direction = !direction;
-		}
-
-		if(direction)
-		{
-			curSize += 0.001f;
-		}
-		else {
-			curSize -= 0.001f;
-		}
-
-		if (curSize >= maxSize || curSize <= minSize)
-		{
-			sizeDirection = !sizeDirection;
-		}
-
-		curAngle += 0.1f;
-		if (curAngle >= 360) curAngle -= 360;
 
 		// clear window color & depth buffer
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -208,10 +111,8 @@ int main()
 		glm::mat4 model = glm::mat4(1.0);
 
 		// transform identity matrix with x translation
-		model = glm::translate(model, glm::vec3(triOffset, 0.0f, -2.5f));
-		model = glm::rotate(model, curAngle * toRadians, glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, -2.5f));
 		model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
-
 		// Assign values to shader, update each cycle
 		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 		glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
@@ -220,7 +121,7 @@ int main()
 
 		// Working with second object (normally go into object class)
 		model = glm::mat4(1.0);
-		model = glm::translate(model, glm::vec3(-triOffset, 1.0f, -2.5f));
+		model = glm::translate(model, glm::vec3(0.0f, 1.0f, -2.5f));
 		model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
 		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 		meshList[1]->RenderMesh();
@@ -230,7 +131,7 @@ int main()
 		// (normally, many shaders would be called in cycles)
 		glUseProgram(0);
 
-		glfwSwapBuffers(mainWindow);
+		mainWindow.swapBuffers();
 	}
 
 	return 0;
