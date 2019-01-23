@@ -5,6 +5,7 @@
 #include<cmath>
 #include<iostream>
 #include<string>
+#include<vector>
 
 #include<GL/glew.h>
 #include<GLFW/glfw3.h>
@@ -13,15 +14,22 @@
 #include<glm/gtc/matrix_transform.hpp>
 #include<glm/gtc/type_ptr.hpp>
 
+#include "Mesh.h"
+
+// make warning go away:
+// default lib 'MSVCRT' conflict with use of other libs; use/ NODEFAULTLIB:library
+#define NODEFAULTLIB
 
 // Defining window dimensions
 const GLint WIDTH = 800, HEIGHT = 600;
 const float toRadians = 3.14159265f / 180.0f;
 
+std::vector<Mesh*> meshList;
+
 // variables for pipeline parts
 // VAO = Vertex Array Object
 // VBO = Vertex Buffer Object
-GLuint VAO, VBO, IBO, shader, uniformModel, uniformProjection;
+GLuint shader, uniformModel, uniformProjection;
 
 // Control triangle movements
 bool direction = true;
@@ -89,40 +97,13 @@ void createTriangle()
 	  0.0f, 1.0f, 0.0f
 	};
 
-	// Creating VAO in the graphics card
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
+	Mesh* obj1 = new Mesh();
+	obj1->CreateMesh(vertices, indices, 12, 12);
+	meshList.push_back(obj1);
 
-	// create buffer for indices
-	glGenBuffers(1, &IBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	// Create buffer object to put in VAO
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-	// Connect data (vertices) to the created buffer:
-	// 1. Allocates memory on the GPU for vertex data
-	// 2. Copies data from main memory to GPU memory
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	// Tells OpenGL what format our VBO data is.
-	// Looks at array bound to GL_ARRAY_BUFFER. Params:
-	// 1. Attribute index in the vertex shader
-	// 2. Each vertex position has 3 values
-	// 3. 32bit float values
-	// 4. Not clear yet
-	// 5. Spacing between the values (tightly packed 0)
-	// 6. Byte offset (0 forstarting from beginning of VBO)
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(0);
-
-	// Unbinding buffers
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	glBindVertexArray(0);
+	Mesh* obj2 = new Mesh();
+	obj2->CreateMesh(vertices, indices, 12, 12);
+	meshList.push_back(obj2);
 
 }
 
@@ -347,16 +328,16 @@ int main()
 		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 		glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
 
-		glBindVertexArray(VAO);
 		validateShader();
+		meshList[0]->RenderMesh();
 
-		// Rendering function. Draws one triangle for every 3 vertices. Params:
-		// 1. Type of Data
-		// 2. index in the glVertexAttribPointer specified data
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
-		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
+		// Working with second object (normally go into object class)
+		model = glm::mat4(1.0);
+		model = glm::translate(model, glm::vec3(-triOffset, 1.0f, -2.5f));
+		model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
+		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+		meshList[1]->RenderMesh();
+
 
 		// unassign shader program
 		// (normally, many shaders would be called in cycles)
