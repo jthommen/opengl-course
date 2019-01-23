@@ -15,21 +15,14 @@
 #include<glm/gtc/type_ptr.hpp>
 
 #include "Mesh.h"
-
-// make warning go away:
-// default lib 'MSVCRT' conflict with use of other libs; use/ NODEFAULTLIB:library
-#define NODEFAULTLIB
+#include "Shader.h"
 
 // Defining window dimensions
 const GLint WIDTH = 800, HEIGHT = 600;
 const float toRadians = 3.14159265f / 180.0f;
 
 std::vector<Mesh*> meshList;
-
-// variables for pipeline parts
-// VAO = Vertex Array Object
-// VBO = Vertex Buffer Object
-GLuint shader, uniformModel, uniformProjection;
+std::vector<Shader> shaderList;
 
 // Control triangle movements
 bool direction = true;
@@ -78,7 +71,7 @@ static const char* fShader = "								\n"
 "	color = vCol;											\n"
 "}";
 
-void createTriangle()
+void CreateObjects()
 {
 	// Telling openGL where the triangle is gonna be drawn
 	// reusing indexed points to avoid duplicates
@@ -107,103 +100,11 @@ void createTriangle()
 
 }
 
-// Compiling & adding the shaders to the program
-void addShader(GLuint theProgram, const char* shaderCode, GLenum shaderType)
+void CreateShaders()
 {
-	// create empty shader
-	GLuint theShader = glCreateShader(shaderType);
-
-	// Where shader code is stored
-	const GLchar* theCode[1];
-	theCode[0] = shaderCode;
-
-	// Get shader code length
-	GLint codeLength[1];
-	codeLength[0] = strlen(shaderCode);
-
-	// Will modify the code sitting in memory. Params:
-	// 1. Shader object to put the string (code) into
-	// 2. Number of strings to put into shader
-	// 3. String (code) itself
-	// 4. Length of string (code)
-	glShaderSource(theShader, 1, theCode, codeLength);
-
-	// Compile shader
-	glCompileShader(theShader);
-
-	// Validate compiled shader
-	GLint result = 0;
-	GLchar eLog[1024] = { 0 };
-
-	// Check if compiling errors happened
-	glGetShaderiv(theShader, GL_COMPILE_STATUS, &result);
-	if (!result)
-	{
-		// If not okay, get Info log and put it into the char array
-		glGetShaderInfoLog(theShader, sizeof(eLog), NULL, eLog);
-
-		// Then print error log
-		std::cout << "Error compiling " << shaderType << " shader: " << eLog << std::endl;
-		return;
-	}
-
-	glAttachShader(theProgram, theShader);
-}
-
-void compileShaders()
-{
-	shader = glCreateProgram();
-
-	if (!shader) {
-		std::cout << "Error creating shader program.\n";
-		return;
-	}
-
-	addShader(shader, vShader, GL_VERTEX_SHADER);
-	addShader(shader, fShader, GL_FRAGMENT_SHADER);
-
-	// link and valiate the shader
-	GLint result = 0;
-	GLchar eLog[1024] = { 0 };
-
-	// Create executables on the graphics card
-	// Check if linking errors happened
-	glLinkProgram(shader);
-	glGetProgramiv(shader, GL_LINK_STATUS, &result);
-	if (!result)
-	{
-		// If not okay, get Info log and put it into the char array
-		glGetProgramInfoLog(shader, sizeof(eLog), NULL, eLog);
-
-		// Then print error log
-		std::cout << "Error linking program: " << eLog << std::endl;
-		return;
-	}
-
-	// Get the ID of the uniform variabless
-	uniformModel = glGetUniformLocation(shader, "model");
-	uniformProjection = glGetUniformLocation(shader, "projection");
-
-}
-
-void validateShader()
-{
-	// Check if validated program has errors
-	GLint result = 0;
-	GLchar eLog[1024] = { 0 };
-
-	glValidateProgram(shader);
-	glGetProgramiv(shader, GL_VALIDATE_STATUS, &result);
-	if (!result)
-	{
-		// If not okay, get Info log and put it into the char array
-		glGetProgramInfoLog(shader, sizeof(eLog), NULL, eLog);
-
-		// Then print error log
-		std::cout << "Error validating program: " << eLog << std::endl;
-		return;
-	}
-
+	Shader* shader1 = new Shader();
+	shader1->CreateFromString(vShader, fShader);
+	shaderList.push_back(*shader1);
 }
 
 int main()
@@ -265,8 +166,10 @@ int main()
 	glViewport(0, 0, bufferWidth, bufferHeight);
 
 	// Call functions to draw the triangle
-	createTriangle();
-	compileShaders();
+	CreateObjects();
+	CreateShaders();
+
+	GLuint uniformProjection = 0, uniformModel = 0;
 
 	// Creating camera projection (adding depth)
 	glm::mat4 projection = glm::perspective(45.0f, (GLfloat)bufferWidth / (GLfloat)bufferHeight, 0.1f, 100.0f);
@@ -314,7 +217,9 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// start shader program
-		glUseProgram(shader);
+		shaderList[0].UseShader();
+		uniformModel = shaderList[0].GetModelLocation();
+		uniformProjection = shaderList[0].GetProjectionLocation();
 
 		// Create 4x4 matrix (identity)
 		glm::mat4 model = glm::mat4(1.0);
@@ -328,7 +233,6 @@ int main()
 		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 		glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
 
-		validateShader();
 		meshList[0]->RenderMesh();
 
 		// Working with second object (normally go into object class)
